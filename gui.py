@@ -379,15 +379,19 @@ class BioticSegmentation:
         self.update_display()
 
     def save_masks(self):
-
-        # Resize the mask down to 512 x 512
-        mask = torch.nn.functional.interpolate(
-            self.out_mask.unsqueeze(dim=1),
-            size=(512, 512),
-            mode="bilinear",
-            align_corners=False,
-        )
-        mask = mask.squeeze(dim=1) >= 0.0
+        """
+        Save the masks to the output directory as uncompressed
+        PNG images.
+        """
+        if not self.output_path.exists():
+            self.output_path.mkdir()
+        for src_file, mask in zip(self.image_dataset.files, self.out_mask):
+            if mask is not None:
+                mask = Image.fromarray(mask.astype(np.uint8))
+                src_file = pathlib.Path(src_file)
+                output_file = str(self.output_path / src_file.stem) + ".png"
+                print(f"Saving {output_file}")
+                mask.save(output_file)
 
     def init_ui(self):
         self.root = tk.Tk()
@@ -445,7 +449,7 @@ class BioticSegmentation:
         self.save_button = ttk.Button(
             self.root,
             text="Save Masks",
-            command=lambda: self.save_masks_to_netcdf(),
+            command=lambda: self.save_masks(),
         )
         self.save_button.pack(side=tk.TOP, pady=5)
 
