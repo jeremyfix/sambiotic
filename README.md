@@ -38,30 +38,6 @@ wget https://raw.githubusercontent.com/facebookresearch/sam2/refs/heads/main/che
 bash download_ckpts.sh
 ```
 
-## Update the image size
-
-We use models with a smaller batch size than the original SAM2.1 which is by default using images of size 1024 x 1024.
-To so, you need to manually change the content of the yaml config files. 
-
-We will copy the original yaml files into new ones where only the image size is changed.
-
-First locate where sam2 has been installed
-
-```
-python -m pip show sam2
-
->> Location: xxxx
-```
-
-Let us call this location SAM2_PATH
-
-Then :
-
-```
-cd SAM2_PATH/sam2/configs/sam2.1
-for f in *.yaml; do sed "s/image_size: 1024/image_size: 256/g" $f >> 256_$f;done
-```
-
 
 # Run
 
@@ -74,5 +50,5 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 and then you can 
 
 ```bash
-python gui.py xray.nc sam2.1-hiera-small
+python gui.py image_dir sam2.1-hiera-large
 ```
