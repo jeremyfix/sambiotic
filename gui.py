@@ -176,7 +176,12 @@ class BioticSegmentation:
             # It is suggested to pick the mask with the highest score
             sorted_ind = np.argsort(scores)[::-1]
             masks = masks[sorted_ind[0]]
-        self.out_mask[self.image_idx][masks == 1.0] = ann_obj_id
+        # Fill in the mask only on pixels previously annotated as
+        # background
+        bkgrd_mask = self.out_mask[self.image_idx] == 0
+        self.out_mask[self.image_idx][
+            np.logical_and(bkgrd_mask, masks == 1.0)
+        ] = ann_obj_id
 
     def update_display(self, event=None):
         self.canvas.delete("all")
