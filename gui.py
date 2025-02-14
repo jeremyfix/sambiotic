@@ -107,6 +107,8 @@ class BioticSegmentation:
                 initialdir=self.image_dataset.directory,
                 title="Select a directory of images",
             )
+            if not directory:
+                return
         self.output_path = pathlib.Path("./masks")
 
         self.image_dataset = FileBrowser(directory, self.device)
