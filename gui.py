@@ -147,7 +147,7 @@ class BioticSegmentation:
 
         image_prompts = {}
 
-        # Get the prompts from the current slice
+        # Get the prompts from the current image
         positive_points = self.prompts[self.image_idx]["positive"]
         negative_points = self.prompts[self.image_idx]["negative"]
         box = self.prompts[self.image_idx]["box"]
@@ -313,7 +313,7 @@ class BioticSegmentation:
             self.draw_mode = "box"
             self.draw_mode_label.config(text="Draw Mode: Box")
         # If the user presses the left or right arrow key
-        # Go the next or previous slice and update the slider
+        # Go the next or previous image and update the slider
         elif event.keysym == "Left":
             self.change_image(max(0, self.image_idx - 1))
             self.image_slider.set(self.image_idx)
@@ -324,7 +324,7 @@ class BioticSegmentation:
             self.image_slider.set(self.image_idx)
             self.init_processing()
             self.update_display()
-        # On page up or page down, move 10 slices
+        # On page up or page down, move 10 images
         elif event.keysym == "Next":
             self.change_image(max(0, self.image_idx - 10))
             self.image_slider.set(self.image_idx)
@@ -333,7 +333,7 @@ class BioticSegmentation:
             self.change_image(min(len(self.image_dataset) - 1, self.image_idx + 10))
             self.image_slider.set(self.image_idx)
             self.update_display()
-        # Reset the prompts of the current slice on "r" as well as the predicted mask
+        # Reset the prompts of the current image on "r" as well as the predicted mask
         elif event.char == "r":
             self.prompts[self.image_idx] = {"positive": [], "negative": [], "box": None}
             self.box1_x = None
@@ -410,18 +410,18 @@ class BioticSegmentation:
         self.canvas.bind("<Configure>", self.update_display)
         self.root.bind("<Key>", self.on_keystroke)
 
-        # Frame for slice selection
-        slice_frame = tk.Frame(self.root, bd=2, relief=tk.SUNKEN)
-        slice_frame.pack(side=tk.TOP, fill=tk.X, padx=5, pady=5)
+        # Frame for image selection
+        image_frame = tk.Frame(self.root, bd=2, relief=tk.SUNKEN)
+        image_frame.pack(side=tk.TOP, fill=tk.X, padx=5, pady=5)
 
         self.image_label = tk.Label(
-            slice_frame,
+            image_frame,
             text=f"Image: {self.image_idx + 1}/{len(self.image_dataset)}",
         )
         self.image_label.pack(padx=5, pady=5)
 
         self.image_slider = ttk.Scale(
-            slice_frame,
+            image_frame,
             from_=0,
             to=len(self.image_dataset) - 1,
             orient=tk.HORIZONTAL,
@@ -482,7 +482,7 @@ class BioticSegmentation:
         help_window.title("Help")
         help_text = tk.Text(help_window, wrap=tk.WORD, width=50, height=20)
         help_text.insert(tk.END, "Instructions:\n\n")
-        help_text.insert(tk.END, "1. Use the slider to navigate through slices.\n")
+        help_text.insert(tk.END, "1. Use the slider to navigate through images.\n")
         help_text.insert(
             tk.END, "2. Use the 'p' key to switch to positive point mode.\n"
         )
@@ -493,9 +493,9 @@ class BioticSegmentation:
         help_text.insert(tk.END, "5. Click and drag to draw a box or add points.\n")
         help_text.insert(
             tk.END,
-            "6. Use the 'Propagate' button to propagate predictions both forward and backward given the prompts of the current slice.\n",
+            "6. Use the 'Propagate' button to propagate predictions both forward and backward given the prompts of the current image.\n",
         )
-        help_text.insert(tk.END, "7. Use the 'r' key to reset the current slice.\n")
+        help_text.insert(tk.END, "7. Use the 'r' key to reset the current image.\n")
         help_text.insert(tk.END, "8. Use the 'q' key to quit the application.\n")
         help_text.config(state=tk.DISABLED)
         help_text.pack(padx=10, pady=10)
