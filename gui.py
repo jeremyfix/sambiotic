@@ -83,6 +83,11 @@ class BioticSegmentation:
         self.draw_mode = "box"  # Can be box or point
         self.point_mode = "positive"  # Can be "positive" or "negative"
 
+        # Initialize the region where the image will be displayed
+        # This is used to bound the add points and draw box
+        self.upper_left_xy = (0, 0)
+        self.bottom_right_xy = (0, 0)
+
         # Loads the SAM2 model
         self.predictor = build_model(modelname, self.device)
 
@@ -212,7 +217,36 @@ class BioticSegmentation:
         overlaid[mask] = 0.5 * current_image[mask] + 0.5 * self.last_mask_color
 
         img = Image.fromarray((overlaid * 255).astype(np.uint8))
-        img = img.resize((canvas_width, canvas_height))  # , Image.ANTIALIAS)
+
+        # Resize the image and possibly pad it to keep the aspect ratio
+        canvas_aspect_ratio = canvas_width / canvas_height
+        image_aspect_ratio = img.width / img.height
+        if canvas_aspect_ratio > image_aspect_ratio:
+            new_width = int(canvas_height * image_aspect_ratio)
+            if new_width == 0:
+                new_width = canvas_width
+            resized_img = img.resize((new_width, canvas_height))
+            pad = (canvas_width - new_width) // 2
+            img = Image.new("RGB", (canvas_width, canvas_height), (0, 0, 0))
+            img.paste(resized_img, (pad, 0))
+            # Save the valid region of the image with the upper left corner
+            # and bottom right corner of the image
+            self.upper_left_xy = (pad, 0)
+            self.bottom_right_xy = (pad + new_width, canvas_height)
+        else:
+            new_height = int(canvas_width / image_aspect_ratio)
+            if new_height == 0:
+                new_height = canvas_height
+            resized_img = img.resize((canvas_width, new_height))
+            pad = (canvas_height - new_height) // 2
+            img = Image.new("RGB", (canvas_width, canvas_height), (0, 0, 0))
+            img.paste(resized_img, (0, pad))
+            # Save the valid region of the image with the upper left corner
+            # and bottom right corner of the image
+            self.upper_left_xy = (0, pad)
+            self.bottom_right_xy = (canvas_width, pad + new_height)
+
+        # img = img.resize((canvas_width, canvas_height))  # , Image.ANTIALIAS)
 
         self.img_tk = ImageTk.PhotoImage(img)
         self.canvas.create_image(0, 0, anchor=tk.NW, image=self.img_tk)
@@ -249,30 +283,40 @@ class BioticSegmentation:
     def image_coords_to_mask_coords(self, x, y):
         canvas_width = self.canvas.winfo_width()
         canvas_height = self.canvas.winfo_height()
-        x = x / canvas_width * self.current_image.shape[1]
-        y = y / canvas_height * self.current_image.shape[0]
+        x = (x - self.upper_left_xy[0]) / (self.bottom_right_xy[0] - self.upper_left_xy[0]) * self.current_image.shape[1]
+        y = (y - self.upper_left_xy[1]) / (self.bottom_right_xy[1] - self.upper_left_xy[1]) * self.current_image.shape[0]
         return x, y
 
     def mask_coords_to_image_coords(self, x, y):
         canvas_width = self.canvas.winfo_width()
         canvas_height = self.canvas.winfo_height()
-        x = x / self.current_image.shape[1] * canvas_width
-        y = y / self.current_image.shape[0] * canvas_height
+        x = x / self.current_image.shape[1] * (self.bottom_right_xy[0] - self.upper_left_xy[0]) + self.upper_left_xy[0]
+        y = y / self.current_image.shape[0] * (self.bottom_right_xy[1] - self.upper_left_xy[1]) + self.upper_left_xy[1]
         return x, y
 
     def add_point(self, xy):
         x, y = xy
         x, y = self.image_coords_to_mask_coords(x, y)
+        
+        if x < 0 or x >= self.current_image.shape[1] or y < 0 or y >= self.current_image.shape[0]:
+            print("Invalid point, outside of the bounds of the image")
+            return
+        
         if self.point_mode == "positive":
             self.prompts[self.image_idx]["positive"].append([x, y])
         else:
             self.prompts[self.image_idx]["negative"].append([x, y])
 
     def on_mouse_press(self, event):
-        if self.draw_mode == "box":
-            self.box1_x, self.box1_y = self.image_coords_to_mask_coords(
+        b1_x, b1_y = self.image_coords_to_mask_coords(
                 event.x, event.y
-            )
+        )
+        if b1_x < 0 or b1_x >= self.current_image.shape[1] or b1_y < 0 or b1_y >= self.current_image.shape[0]:
+            print("Invalid point, outside of the bounds of the image")
+            return
+
+        if self.draw_mode == "box":
+            self.box1_x, self.box1_y = b1_x, b1_y
             self.drawing_box = True
         else:
             self.add_point((event.x, event.y))
@@ -294,24 +338,25 @@ class BioticSegmentation:
             self.update_display()
 
     def on_mouse_release(self, event):
-        self.drawing_box = False
-        # Only update the predictions on release when we draw a box
-        if self.draw_mode == "box":
-            self.compute_predictions()
-            self.update_display()
+        if self.drawing_box:
+            self.drawing_box = False
+            # Only update the predictions on release when we draw a box
+            if self.draw_mode == "box":
+                self.compute_predictions()
+                self.update_display()
 
     def on_keystroke(self, event):
         if event.char == "p":
             self.draw_mode = "point"
             self.point_mode = "positive"
-            self.draw_mode_label.config(text="Draw Mode: Point (Positive)")
+            self.draw_mode_label.config(text="Draw Mode:\nPoint (Positive)")
         elif event.char == "n":
             self.draw_mode = "point"
             self.point_mode = "negative"
-            self.draw_mode_label.config(text="Draw Mode: Point (Negative)")
+            self.draw_mode_label.config(text="Draw Mode:\nPoint (Negative)")
         elif event.char == "b":
             self.draw_mode = "box"
-            self.draw_mode_label.config(text="Draw Mode: Box")
+            self.draw_mode_label.config(text="Draw Mode:\nBox")
         # If the user presses the left or right arrow key
         # Go the next or previous image and update the slider
         elif event.keysym == "Left":
@@ -411,7 +456,7 @@ class BioticSegmentation:
         self.root.bind("<Key>", self.on_keystroke)
 
         # Frame for image selection
-        image_frame = tk.Frame(self.root, bd=2, relief=tk.SUNKEN)
+        image_frame = tk.Frame(self.root)
         image_frame.pack(side=tk.TOP, fill=tk.X, padx=5, pady=5)
 
         self.image_label = tk.Label(
@@ -437,11 +482,11 @@ class BioticSegmentation:
         )
 
         # Frame for draw mode
-        draw_mode_frame = tk.Frame(self.root, bd=2, relief=tk.SUNKEN)
+        draw_mode_frame = ttk.Frame(self.root)
         draw_mode_frame.pack(side=tk.TOP, fill=tk.X, padx=5, pady=5)
 
         self.draw_mode_label = tk.Label(
-            draw_mode_frame, text=f"Draw Mode: {self.draw_mode.capitalize()}"
+            draw_mode_frame, text=f"Draw Mode:\n{self.draw_mode.capitalize()}", width=20
         )
         self.draw_mode_label.pack(padx=5, pady=5)
 
