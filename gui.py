@@ -142,6 +142,10 @@ class BioticSegmentation:
 
     def compute_predictions(self):
         # Reset the state
+        if self.out_mask[self.image_idx] is None:
+            self.out_mask[self.image_idx] = np.zeros(
+                self.current_image.shape[:2], dtype=np.int32
+            )
         prev_mask = (
             self.out_mask[self.image_idx][...]
             == self.current_annotation_id[self.image_idx]
@@ -438,10 +442,6 @@ class BioticSegmentation:
         )
 
         self.init_processing()
-        if self.out_mask[self.image_idx] is None:
-            self.out_mask[self.image_idx] = np.zeros(
-                self.current_image.shape[:2], dtype=np.int32
-            )
         self.update_display()
 
     def save_masks(self):
