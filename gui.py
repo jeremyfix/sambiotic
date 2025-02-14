@@ -285,35 +285,61 @@ class BioticSegmentation:
     def image_coords_to_mask_coords(self, x, y):
         canvas_width = self.canvas.winfo_width()
         canvas_height = self.canvas.winfo_height()
-        x = (x - self.upper_left_xy[0]) / (self.bottom_right_xy[0] - self.upper_left_xy[0]) * self.current_image.shape[1]
-        y = (y - self.upper_left_xy[1]) / (self.bottom_right_xy[1] - self.upper_left_xy[1]) * self.current_image.shape[0]
+        x = (
+            (x - self.upper_left_xy[0])
+            / (self.bottom_right_xy[0] - self.upper_left_xy[0])
+            * self.current_image.shape[1]
+        )
+        y = (
+            (y - self.upper_left_xy[1])
+            / (self.bottom_right_xy[1] - self.upper_left_xy[1])
+            * self.current_image.shape[0]
+        )
         return x, y
 
     def mask_coords_to_image_coords(self, x, y):
         canvas_width = self.canvas.winfo_width()
         canvas_height = self.canvas.winfo_height()
-        x = x / self.current_image.shape[1] * (self.bottom_right_xy[0] - self.upper_left_xy[0]) + self.upper_left_xy[0]
-        y = y / self.current_image.shape[0] * (self.bottom_right_xy[1] - self.upper_left_xy[1]) + self.upper_left_xy[1]
+        x = (
+            x
+            / self.current_image.shape[1]
+            * (self.bottom_right_xy[0] - self.upper_left_xy[0])
+            + self.upper_left_xy[0]
+        )
+        y = (
+            y
+            / self.current_image.shape[0]
+            * (self.bottom_right_xy[1] - self.upper_left_xy[1])
+            + self.upper_left_xy[1]
+        )
         return x, y
 
     def add_point(self, xy):
         x, y = xy
         x, y = self.image_coords_to_mask_coords(x, y)
-        
-        if x < 0 or x >= self.current_image.shape[1] or y < 0 or y >= self.current_image.shape[0]:
+
+        if (
+            x < 0
+            or x >= self.current_image.shape[1]
+            or y < 0
+            or y >= self.current_image.shape[0]
+        ):
             print("Invalid point, outside of the bounds of the image")
             return
-        
+
         if self.point_mode == "positive":
             self.prompts[self.image_idx]["positive"].append([x, y])
         else:
             self.prompts[self.image_idx]["negative"].append([x, y])
 
     def on_mouse_press(self, event):
-        b1_x, b1_y = self.image_coords_to_mask_coords(
-                event.x, event.y
-        )
-        if b1_x < 0 or b1_x >= self.current_image.shape[1] or b1_y < 0 or b1_y >= self.current_image.shape[0]:
+        b1_x, b1_y = self.image_coords_to_mask_coords(event.x, event.y)
+        if (
+            b1_x < 0
+            or b1_x >= self.current_image.shape[1]
+            or b1_y < 0
+            or b1_y >= self.current_image.shape[0]
+        ):
             print("Invalid point, outside of the bounds of the image")
             return
 
@@ -517,7 +543,7 @@ class BioticSegmentation:
         self.quit_button.pack(side=tk.TOP)
 
         # This is where the magic happens
-        sv_ttk.set_theme("dark")
+        sv_ttk.set_theme("light")
 
         self.root.protocol("WM_DELETE_WINDOW", sys.exit)
         self.root.mainloop()
