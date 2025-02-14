@@ -4,7 +4,7 @@ This gui wraps SAM2.1 for segmenting images. Examples below for
 
 1. Segmenting diatoms
 
-[![Watch the video](https://youtu.be/PRCG1ftIQqQ)](https://youtu.be/PRCG1ftIQqQ)
+[![Watch the video](https://img.youtube.com/vi/PRCG1ftIQqQ/0.jpg)](https://www.youtube.com/watch?v=PRCG1ftIQqQ)
 
 # Setup
 
