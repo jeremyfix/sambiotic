@@ -124,7 +124,6 @@ class BioticSegmentation:
             self.update_display()
 
     def init_processing(self):
-
         self.current_image = self.image_dataset[self.image_idx]
 
         # Parameters for the SAM2
@@ -283,8 +282,6 @@ class BioticSegmentation:
             )
 
     def image_coords_to_mask_coords(self, x, y):
-        canvas_width = self.canvas.winfo_width()
-        canvas_height = self.canvas.winfo_height()
         x = (
             (x - self.upper_left_xy[0])
             / (self.bottom_right_xy[0] - self.upper_left_xy[0])
@@ -298,8 +295,6 @@ class BioticSegmentation:
         return x, y
 
     def mask_coords_to_image_coords(self, x, y):
-        canvas_width = self.canvas.winfo_width()
-        canvas_height = self.canvas.winfo_height()
         x = (
             x
             / self.current_image.shape[1]
@@ -390,22 +385,16 @@ class BioticSegmentation:
         elif event.keysym == "Left":
             self.change_image(max(0, self.image_idx - 1))
             self.image_slider.set(self.image_idx)
-            self.init_processing()
-            self.update_display()
         elif event.keysym == "Right":
             self.change_image(min(len(self.image_dataset) - 1, self.image_idx + 1))
             self.image_slider.set(self.image_idx)
-            self.init_processing()
-            self.update_display()
         # On page up or page down, move 10 images
         elif event.keysym == "Next":
             self.change_image(max(0, self.image_idx - 10))
             self.image_slider.set(self.image_idx)
-            self.update_display()
         elif event.keysym == "Prior":
             self.change_image(min(len(self.image_dataset) - 1, self.image_idx + 10))
             self.image_slider.set(self.image_idx)
-            self.update_display()
         # Reset the prompts of the current image on "r" as well as the predicted mask
         elif event.char == "r":
             self.prompts[self.image_idx] = {"positive": [], "negative": [], "box": None}
@@ -439,16 +428,20 @@ class BioticSegmentation:
         #     print(f"Unknown key {event.keysym} {event.char}")
 
     def change_image(self, value):
-        self.image_idx = int(float(value))
+        new_idx = int(float(value))
+        if new_idx == self.image_idx:
+            return
+
+        self.image_idx = new_idx
         self.image_label.config(
             text=f"Image: {self.image_idx + 1}/{len(self.image_dataset)}"
         )
 
+        self.init_processing()
         if self.out_mask[self.image_idx] is None:
             self.out_mask[self.image_idx] = np.zeros(
                 self.current_image.shape[:2], dtype=np.int32
             )
-        self.current_image = self.image_dataset[self.image_idx]
         self.update_display()
 
     def save_masks(self):
@@ -502,12 +495,6 @@ class BioticSegmentation:
         )
         self.image_slider.set(self.image_idx)
         self.image_slider.pack(padx=5, pady=5)
-        self.image_slider.bind(
-            "<Motion>",
-            lambda event: self.image_label.config(
-                text=f"Image: {self.image_idx + 1}/{len(self.image_dataset)}"
-            ),
-        )
 
         # Frame for draw mode
         draw_mode_frame = ttk.Frame(self.root)
